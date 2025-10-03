@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+  <title>YouTube Video Downloader</title>
+</head>
+<body>
+
+	<h1>YouTube Downloader</h1>
+  
+	<input id="url" type="text" placeholder="url do video caralho">
+
+	<select id="format">
+		<option value="mp4">MP4</option>
+		<option value="mp3">MP3</option>
+	</select>
+	
+	<label>Qualidade:</label>
+	      <select id="vid-resolution" style="display: none;">
+		<option value="1080p">1080p</option>
+		<option value="720p">720p</option>
+		<option value="480p">480p</option>
+	      </select>
+	      <select id="aud-resolution" style="display: none;">
+		<option value="0">Melhor Qualidade</option>
+		<option value="5">Média Qualidade</option>
+		<option value="10">Pior Qualidade</option>
+	      </select>
+
+	<select id="path">
+		<option value="/home/admin/Downloads">Downloads</option>
+		<option value="/home/admin/musicas">musicas</option>
+	</select>
+
+	<button onclick="post()">
+		submit
+	</button>
+
+	<button onclick="download(blobLink)">
+		download
+	</button>
+
+	<script>		
+	
+		const url = document.getElementById("url");
+		const format = document.getElementById("format");
+		const quality = document.getElementById("resolutions");
+		const path = document.getElementById("path");
+		let blobLink = "";
+		let resolutions = ""; // defiened in getFormat();
+
+		function returnIndex(url){
+			
+			// retorna o valor do index
+			const match = url.match(/&index=(\d+)/);
+			// pega o valor do index e passa para base 10 (n. inteiro)
+			// return match ? parseInt(match[1], 10) : null;
+			// BRO IT NEED TO BE A STRING, THE SERVER CANT PARSE 
+			// FCKING NOTHING EXCEPT STRINGS XD JSON LMAO
+			return match ? match[1] : "null";
+		}
+
+		function isPlaylist(url){
+			const match = url.match(/list=*/);
+			return match ? "true" : "false";
+		}
+
+		async function post(){
+			
+			const urlValue = url.value;
+			const formatValue = format.options[format.selectedIndex].value;
+			const qualityValue = resolutions.options[resolutions.selectedIndex].value;
+			const pathValue = path.options[path.selectedIndex].value;
+			const index = returnIndex(urlValue);
+			const isPlaylistUrl = isPlaylist(urlValue);
+
+			const res = await fetch(`${window.location.href}video`, {
+				method:"post",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					urlValue, 
+					formatValue,
+					qualityValue,
+					pathValue,
+					index,
+					isPlaylistUrl,
+				}),
+			});
+
+			const blob = await res.blob();
+			const file = URL.createObjectURL(blob);
+			blobLink = file;
+
+			console.log(file);
+		}
+
+		function download(url){
+		          const a = document.createElement('a');
+	              	  a.href = url;				  
+			  a.download = url.split('/').pop();
+			  document.body.appendChild(a);
+			  a.click();
+			  document.body.removeChild(a);
+		}
+
+		format.addEventListener("click", getFormat, false);
+		function getFormat() {
+			resolutions.style="display:none";
+
+			switch(format.options[format.selectedIndex ].value){
+				case("mp4"):
+
+					resolutions = document.getElementById("vid-resolution");
+					break;
+				case("mp3"):
+
+					resolutions = document.getElementById("aud-resolution");
+					break;
+			}
+
+			resolutions.style="display:flex";
+		}
+		getFormat();
+	</script>
+</body>
+</html>
+
