@@ -7,7 +7,7 @@
 #include <thread>
 #include <filesystem>
 #include <fcntl.h>
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 #include <cstdlib>
 #include <fstream>
 
@@ -92,11 +92,11 @@ void handleGET(int &socket, const char *filePATH, const int HTTPcode, const char
 
 void downloadVideo(std::string url, std::string quality, std::string format, std::string path, std::string index, std::string isPlaylist, int &socket){
 	
-	// yt-dlp -t "format" -S "quality" -o "/home/lihue/Downloads"  url
+	// yt-dlp -t "format" -S "quality" -o "/home/admin/Downloads"  url
 	
 	std::string ytDlpString = "yt-dlp ";
-	bool needToZip;
-		
+	bool needToZip = false;
+
 	if(format.compare("mp4") == 0)
 		ytDlpString += "-S " + quality + " ";
 	if(format.compare("mp3") == 0)
@@ -104,30 +104,34 @@ void downloadVideo(std::string url, std::string quality, std::string format, std
 
 	ytDlpString += "-t " + format + " ";
 
-	if(index.compare("null") != 0){
+	if(index.compare("null") != 0 || isPlaylist.compare("false") == 0){
+	
+		
+		if(index.compare("null") != 0)
+			ytDlpString += "--no-playlist ";
+		
 
-		ytDlpString += "--playlist-items " + index + " ";
-		ytDlpString += "-o 'video.%(ext)s' ";
-		ytDlpString += "-P /home/lihue/videosDoYoutube/ ";	
+		ytDlpString += "-o './downloads/video.%(ext)s' ";
 	} else if(isPlaylist.compare("true") == 0){
 
 		ytDlpString += "--yes-playlist ";
-		// ytDlpString += "/home/lihue/videosDoYoutube/%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s ";
+		// ytDlpString += "/home/admin/Downloads/%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s ";
 		// this have a generic name "playlist" the other one is for the server, implement later
-		ytDlpString += "-o '/home/lihue/videosDoYoutube/playlist/%(playlists_index)s_%(title)s.%(ext)s' ";
+		ytDlpString += "-o './downloads/playlist/%(playlist_index)s_%(title)s.%(ext)s' ";
 		needToZip = true;
 	}
 
-	ytDlpString += "--write-thumbnail ";
+	// ytDlpString += "--write-thumbnail ";
 	ytDlpString += "--force-overwrites ";
 	ytDlpString += "'" + url + "' ";
 
 	// actually download the video
+	std::cout << "download string: " << ytDlpString << std::endl;
 	std::system(ytDlpString.c_str());
 
 	// if true download the playlist :P
 	if(needToZip){	
-		std::string zipCommand = "cd /home/lihue/videosDoYoutube && 7z a playlist.zip ./playlist && mv /home/lihue/videosDoYoutube/playlist.zip /home/lihue/cpp/servercpp8/";
+		std::string zipCommand = "cd ./downloads && 7z a playlist.zip ./playlist";
 		std::system(zipCommand.c_str());
 	}
 }
@@ -154,22 +158,31 @@ void handlePOST(int &socket, std::string request){
 	// define variables for we start to form the response
 	char buffer[CHUNK];
 	int file_length;
+	int valread;
 	std::string hugeString = "";
 	std::string bodyString = "";
+	std::string typeOfVideo = "";
+	std::string fileLength = "";
+	std::string videoPathAndName = "./downloads/video.";
+	
+	if(index.compare("null") != 0 || isPlaylist.compare("false") == 0){
+		if(format.compare("mp4") == 0){ typeOfVideo += "video/mp4"; videoPathAndName.append("mp4"); }
+		else if(format.compare("mp3") == 0){ typeOfVideo +=" video/mp3"; videoPathAndName.append("mp3"); }
+	} else {
+		typeOfVideo += "application/zip";
+	}
 
-	if(isPlaylist.compare("true") == 0){
-		std::ifstream file("./playlist.zip", std::ios::binary);
+	if(isPlaylist.compare("true") == 0 && index.compare("null") == 0){
+		std::ifstream file("./downloads/playlist.zip", std::ios::binary);
 		if (file) {
-			
 			while (file.read(buffer, sizeof buffer)){
 				bodyString.append(buffer, CHUNK);
 			}
 			file.close();
 		}
 	} else {
-		std::ifstream file("./video.*", std::ios::binary);
-		if (file){
-			
+		std::ifstream file(videoPathAndName.c_str(), std::ios::binary);
+		if(file){
 			while(file.read(buffer, sizeof buffer)){
 				bodyString.append(buffer, CHUNK);
 			}
@@ -180,7 +193,7 @@ void handlePOST(int &socket, std::string request){
 	// handle with Content-Length
 	file_length = bodyString.size();
 	// handle header
-	std::string header = handleHeader(200, "application/zip", file_length);
+	std::string header = handleHeader(200, typeOfVideo.c_str(), file_length);
 
 	// append header abd then the body in only one string 
 	hugeString.append(header);
@@ -195,13 +208,13 @@ void threadFunc(int socket){
 	std::string request = clientRequest(socket);
 	
 	if(strstr(request.c_str(), "GET / ")){
-		handleGET(socket, "./index.html", 200, "text/html");
+		handleGET(socket, "./public/index.html", 200, "text/html");
 	} else if(strstr(request.c_str(), "GET /favicon.ico")){
-		handleGET(socket, "./favicon.ico", 200, "image/x-icon");
+		handleGET(socket, "./public/favicon.ico", 200, "image/x-icon");
 	} else if(strstr(request.c_str(), "POST /video")) {
 		handlePOST(socket, request);
 	} else {
-		handleGET(socket, "./404.html", 404, "text/html");
+		handleGET(socket, "./public/404.html", 404, "text/html");
 	}
 
 	close(socket);
