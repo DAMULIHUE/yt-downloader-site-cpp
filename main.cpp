@@ -90,7 +90,7 @@ void handleGET(int &socket, const char *filePATH, const int HTTPcode, const char
 	send(socket, response.c_str(), response.size(), 0);
 }
 
-void downloadVideo(std::string url, std::string quality, std::string format, std::string path, std::string index, std::string isPlaylist, int &socket){
+void downloadVideo(std::string url, std::string quality, std::string format, std::string path, std::string index, std::string isPlaylist){
 	
 	// yt-dlp -t "format" -S "quality" -o "/home/admin/Downloads"  url
 	
@@ -106,22 +106,25 @@ void downloadVideo(std::string url, std::string quality, std::string format, std
 
 	if(index.compare("null") != 0 || isPlaylist.compare("false") == 0){
 	
-		
 		if(index.compare("null") != 0)
 			ytDlpString += "--no-playlist ";
-		
 
-		ytDlpString += "-o './downloads/video.%(ext)s' ";
+		ytDlpString += "--write-thumbnail ";
+		ytDlpString += "-o '" + path + "/video.%(ext)s' ";
 	} else if(isPlaylist.compare("true") == 0){
 
 		ytDlpString += "--yes-playlist ";
-		// ytDlpString += "/home/admin/Downloads/%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s ";
-		// this have a generic name "playlist" the other one is for the server, implement later
-		ytDlpString += "-o './downloads/playlist/%(playlist_index)s_%(title)s.%(ext)s' ";
-		needToZip = true;
+		if(path.find("musicas") == -1){
+			ytDlpString += "-o '" + path + "/playlist/%(playlist_index)s_%(title)s.%(ext)s' ";
+			needToZip = true;
+		} else {
+			ytDlpString += "-o '" + path + "/%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s' ";
+		}
+		
 	}
 
 	// ytDlpString += "--write-thumbnail ";
+	ytDlpString += "--embed-thumbnail ";
 	ytDlpString += "--force-overwrites ";
 	ytDlpString += "'" + url + "' ";
 
@@ -131,7 +134,7 @@ void downloadVideo(std::string url, std::string quality, std::string format, std
 
 	// if true download the playlist :P
 	if(needToZip){	
-		std::string zipCommand = "cd ./downloads && 7z a playlist.zip ./playlist";
+		std::string zipCommand = "cd " + path + " && 7z a playlist.zip ./playlist";
 		std::system(zipCommand.c_str());
 	}
 }
@@ -153,7 +156,7 @@ void handlePOST(int &socket, std::string request){
 	std::string isPlaylist = jsonData["isPlaylistUrl"];
 
 	// download the video duh
-	downloadVideo(url, quality, format, path, index, isPlaylist, socket);
+	downloadVideo(url, quality, format, path, index, isPlaylist);
 
 	// define variables for we start to form the response
 	char buffer[CHUNK];
@@ -163,24 +166,26 @@ void handlePOST(int &socket, std::string request){
 	std::string bodyString = "";
 	std::string typeOfVideo = "";
 	std::string fileLength = "";
-	std::string videoPathAndName = "./downloads/video.";
+	std::string videoPathAndName = path.append("/video.");
 	
 	if(index.compare("null") != 0 || isPlaylist.compare("false") == 0){
 		if(format.compare("mp4") == 0){ typeOfVideo += "video/mp4"; videoPathAndName.append("mp4"); }
 		else if(format.compare("mp3") == 0){ typeOfVideo +=" video/mp3"; videoPathAndName.append("mp3"); }
 	} else {
 		typeOfVideo += "application/zip";
+		videoPathAndName = path + "/playlist.zip";
 	}
 
+	/*
 	if(isPlaylist.compare("true") == 0 && index.compare("null") == 0){
-		std::ifstream file("./downloads/playlist.zip", std::ios::binary);
+		std::ifstream file(videoPathAndName.c_str(), std::ios::binary);
 		if (file) {
 			while (file.read(buffer, sizeof buffer)){
 				bodyString.append(buffer, CHUNK);
 			}
 			file.close();
 		}
-	} else {
+	} else {*/
 		std::ifstream file(videoPathAndName.c_str(), std::ios::binary);
 		if(file){
 			while(file.read(buffer, sizeof buffer)){
@@ -188,7 +193,7 @@ void handlePOST(int &socket, std::string request){
 			}
 			file.close();
 		}
-	}
+	//}
 
 	// handle with Content-Length
 	file_length = bodyString.size();
@@ -211,8 +216,14 @@ void threadFunc(int socket){
 		handleGET(socket, "./public/index.html", 200, "text/html");
 	} else if(strstr(request.c_str(), "GET /favicon.ico")){
 		handleGET(socket, "./public/favicon.ico", 200, "image/x-icon");
+	} else if(strstr(request.c_str(), "GET /style.css")){ 
+		handleGET(socket, "./public/style.css", 200, "text/css");
+	} else if(strstr(request.c_str(), "GET /fonts/RetroGaming.ttf")){
+	       handleGET(socket, "./public/fonts/RetroGaming.ttf", 200, "application/octet-stream");	
 	} else if(strstr(request.c_str(), "POST /video")) {
 		handlePOST(socket, request);
+	} else if(strstr(request.c_str(), "GET /thumbnail")){
+		handleGET(socket, "./public/downloads/video.webp", 200, "image/webp");
 	} else {
 		handleGET(socket, "./public/404.html", 404, "text/html");
 	}
