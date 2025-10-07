@@ -90,54 +90,64 @@ void handleGET(int &socket, const char *filePATH, const int HTTPcode, const char
 	send(socket, response.c_str(), response.size(), 0);
 }
 
-void downloadVideo(std::string url, std::string quality, std::string format, std::string path, std::string index, std::string isPlaylist){
-	
-	// yt-dlp -t "format" -S "quality" -o "/home/admin/Downloads"  url
-	
-	std::string ytDlpString = "yt-dlp ";
-	bool needToZip = false;
+class ytDlpCommand {
+	public: 
+		std::string url, quality, format, path, index, isPlaylist;
 
-	if(format.compare("mp4") == 0)
-		ytDlpString += "-S " + quality + " ";
-	if(format.compare("mp3") == 0)
-		ytDlpString += "--audio-quality " + quality + " ";
+		void concatAndExecYtDlp(){
+			
+			std::string ytDlpString = "yt-dlp ";
+			bool needToZip = false;
 
-	ytDlpString += "-t " + format + " ";
+			if(format.compare("mp4") == 0)
+				ytDlpString += "-S " + quality + " ";
+			if(format.compare("mp3") == 0)
+				ytDlpString += "--audio-quality " + quality + " ";
 
-	if(index.compare("null") != 0 || isPlaylist.compare("false") == 0){
-	
-		if(index.compare("null") != 0)
-			ytDlpString += "--no-playlist ";
+			ytDlpString += "-t " + format + " ";
 
-		ytDlpString += "--write-thumbnail ";
-		ytDlpString += "-o '" + path + "/video.%(ext)s' ";
-	} else if(isPlaylist.compare("true") == 0){
+			if(index.compare("null") != 0 || isPlaylist.compare("false") == 0){
+			
+				if(index.compare("null") != 0)
+					ytDlpString += "--no-playlist ";
 
-		ytDlpString += "--yes-playlist ";
-		if(path.find("musicas") == -1){
-			ytDlpString += "-o '" + path + "/playlist/%(playlist_index)s_%(title)s.%(ext)s' ";
-			needToZip = true;
-		} else {
-			ytDlpString += "-o '" + path + "/%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s' ";
+				
+
+				if(path.find("musicas") != -1){
+					ytDlpString += "-o '" + path + "/%(title)s.%(ext)s' ";
+					ytDlpString += "--write-thumbnail ";
+				} else { 
+			
+					ytDlpString += "-o '" + path + "/video.%(ext)s' ";
+				}
+
+			} else if(isPlaylist.compare("true") == 0){
+
+				ytDlpString += "--yes-playlist ";
+				if(path.find("musicas") == -1){
+					ytDlpString += "-o '" + path + "/playlist/%(playlist_index)s_%(title)s.%(ext)s' ";
+					needToZip = true;
+				} else {
+					ytDlpString += "-o '" + path + "/%(playlist_title)s/%(playlist_index)s_%(title)s.%(ext)s' ";
+				}
+				
+			}
+
+			ytDlpString += "--embed-thumbnail ";
+			ytDlpString += "--force-overwrites ";
+			ytDlpString += "'" + url + "' ";
+
+			// actually download the video
+			std::cout << "download string: " << ytDlpString << std::endl;
+			std::system(ytDlpString.c_str());
+
+			// if true download the playlist :P
+			if(needToZip){	
+				std::string zipCommand = "cd " + path + " && 7z a playlist.zip ./playlist";
+				std::system(zipCommand.c_str());
+			}
 		}
-		
-	}
-
-	// ytDlpString += "--write-thumbnail ";
-	ytDlpString += "--embed-thumbnail ";
-	ytDlpString += "--force-overwrites ";
-	ytDlpString += "'" + url + "' ";
-
-	// actually download the video
-	std::cout << "download string: " << ytDlpString << std::endl;
-	std::system(ytDlpString.c_str());
-
-	// if true download the playlist :P
-	if(needToZip){	
-		std::string zipCommand = "cd " + path + " && 7z a playlist.zip ./playlist";
-		std::system(zipCommand.c_str());
-	}
-}
+};
 
 void handlePOST(int &socket, std::string request){
 	
@@ -147,16 +157,17 @@ void handlePOST(int &socket, std::string request){
 	std::string requestBody = request.substr(pos);
 
 	// parse json request body
+	ytDlpCommand downloadVideo;
 	auto jsonData = nlohmann::json::parse(requestBody);
-	std::string url = jsonData["urlValue"];
-	std::string quality = jsonData["qualityValue"];
-	std::string format = jsonData["formatValue"];
-	std::string path = jsonData["pathValue"];
-	std::string index = jsonData["index"];
-	std::string isPlaylist = jsonData["isPlaylistUrl"];
+	downloadVideo.url = jsonData["urlValue"];
+	downloadVideo.quality = jsonData["qualityValue"];
+	downloadVideo.format = jsonData["formatValue"];
+	downloadVideo.path = jsonData["pathValue"];
+	downloadVideo.index = jsonData["index"];
+	downloadVideo.isPlaylist = jsonData["isPlaylistUrl"];
 
 	// download the video duh
-	downloadVideo(url, quality, format, path, index, isPlaylist);
+	downloadVideo.concatAndExecYtDlp();
 
 	// define variables for we start to form the response
 	char buffer[CHUNK];
@@ -166,34 +177,23 @@ void handlePOST(int &socket, std::string request){
 	std::string bodyString = "";
 	std::string typeOfVideo = "";
 	std::string fileLength = "";
-	std::string videoPathAndName = path.append("/video.");
+	std::string videoPathAndName = downloadVideo.path.append("/video.");
 	
-	if(index.compare("null") != 0 || isPlaylist.compare("false") == 0){
-		if(format.compare("mp4") == 0){ typeOfVideo += "video/mp4"; videoPathAndName.append("mp4"); }
-		else if(format.compare("mp3") == 0){ typeOfVideo +=" video/mp3"; videoPathAndName.append("mp3"); }
+	if(downloadVideo.index.compare("null") != 0 || downloadVideo.isPlaylist.compare("false") == 0){
+		if(downloadVideo.format.compare("mp4") == 0){ typeOfVideo += "video/mp4"; videoPathAndName.append("mp4"); }
+		else if(downloadVideo.format.compare("mp3") == 0){ typeOfVideo +=" video/mp3"; videoPathAndName.append("mp3"); }
 	} else {
 		typeOfVideo += "application/zip";
-		videoPathAndName = path + "/playlist.zip";
+		videoPathAndName = downloadVideo.path + "/playlist.zip";
 	}
 
-	/*
-	if(isPlaylist.compare("true") == 0 && index.compare("null") == 0){
-		std::ifstream file(videoPathAndName.c_str(), std::ios::binary);
-		if (file) {
-			while (file.read(buffer, sizeof buffer)){
-				bodyString.append(buffer, CHUNK);
-			}
-			file.close();
+	std::ifstream file(videoPathAndName.c_str(), std::ios::binary);
+	if(file){
+		while(file.read(buffer, sizeof buffer)){
+			bodyString.append(buffer, CHUNK);
 		}
-	} else {*/
-		std::ifstream file(videoPathAndName.c_str(), std::ios::binary);
-		if(file){
-			while(file.read(buffer, sizeof buffer)){
-				bodyString.append(buffer, CHUNK);
-			}
-			file.close();
-		}
-	//}
+		file.close();
+	}
 
 	// handle with Content-Length
 	file_length = bodyString.size();
