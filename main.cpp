@@ -119,6 +119,7 @@ class ytDlpCommand {
 				} else { 
 			
 					ytDlpString += "-o '" + path + "/video.%(ext)s' ";
+					ytDlpString += "--write-thumbnail ";
 				}
 
 			} else if(isPlaylist.compare("true") == 0){
@@ -224,6 +225,8 @@ void threadFunc(int socket){
 		handlePOST(socket, request);
 	} else if(strstr(request.c_str(), "GET /thumbnail")){
 		handleGET(socket, "./public/downloads/video.webp", 200, "image/webp");
+	} else if(strstr(request.c_str(), "GET /NO_VIDEO_SUBMITED.png")) {
+		handleGET(socket, "./public/NO_VIDEO_SUBMITED.png", 200, "image/png");
 	} else {
 		handleGET(socket, "./public/404.html", 404, "text/html");
 	}
