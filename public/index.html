@@ -114,31 +114,31 @@
 			});
 
 			const blob = await res.blob();
-			/*
-			thumbnail.src = "./downloads/video.webp";
-			thumbnail.style.display = "block";
-			*/
-
-			const thumbnailFetch = await fetch(`${window.location.href}thumbnail`, {
-				method: "GET",
-			});
 
 			if(pathValue == "./public/downloads"){
-				const thumbnailsrc = await thumbnailFetch.blob();
-				thumbnail.src = URL.createObjectURL(thumbnailsrc);
-				downloadButt.style.display = "flex";
+				if(isPlaylistUrl == "false"){
+					const thumbnailFetch = await fetch(`${window.location.href}thumbnail`, {
+						method: "GET",
+					});
+
+					const thumbnailsrc = await thumbnailFetch.blob();
+					thumbnail.src = URL.createObjectURL(thumbnailsrc);
+				} else {
+					thumbnail.src = "playlistThumb.png";
+				}
+								downloadButt.style.display = "flex";
 				const file = URL.createObjectURL(blob);
 				blobLink = file;
 			} else {
-				thumbnail.src = "";
-				videoWarning.style.display = "flex";
+				thumbnail.src = "playlistThumb.png";
 			}
 		}
 
 		function download(url){
 		          const a = document.createElement('a');
 	              	  a.href = url;				  
-			  a.download = url.split('/').pop();
+			  //a.download = url.split('/').pop();
+			  a.download = "idkwhatToPutHere";
 			  document.body.appendChild(a);
 			  a.click();
 			  document.body.removeChild(a);

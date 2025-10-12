@@ -72,7 +72,7 @@ void handleGET(int &socket, const char *filePATH, const int HTTPcode, const char
 	const int file = open(filePATH, O_RDONLY);
 	if(file < 0)
 		errorMessage("on open file: ");
-
+	
 	const int index_length = std::filesystem::file_size(filePATH);
 	const std::string header = handleHeader(HTTPcode, fileType, index_length);
 
@@ -229,6 +229,8 @@ void threadFunc(int socket){
 		handleGET(socket, "./public/NO_VIDEO_SUBMITED.png", 200, "image/png");
 	} else if(strstr(request.c_str(), "GET /loading.gif")){
 		handleGET(socket, "./public/loading.gif", 200, "image/gif");
+	} else if(strstr(request.c_str(), "GET /playlistThumb.png")){
+		handleGET(socket, "./public/playlistThumb.png", 200, "image/png");
 	} else {
 		handleGET(socket, "./public/404.html", 404, "text/html");
 	}
