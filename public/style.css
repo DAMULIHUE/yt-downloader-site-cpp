@@ -39,6 +39,7 @@ h1 {
 
 /* === Main Layout === */
 .mainContents {
+  width: 100%;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -53,7 +54,8 @@ h1 {
   border: 2px solid #000;
   box-shadow: inset -2px -2px #808080, inset 2px 2px #ffffff;
   padding: 16px;
-  width: 300px;
+  width: 100vh;
+  min-width: 300px;
 }
 
 /* === Form Elements === */
@@ -84,6 +86,8 @@ button, #downloadButt {
   padding: 8px 14px;
   margin-top: 15px;
   cursor: pointer;
+  width:100%;
+  text-align: center;
 }
 
 
@@ -93,17 +97,16 @@ button, #downloadButt {
   align-items: center;
   justify-content: center;
   background-color: #000;
-  width: 100%;
   height: 100%;
-  border: 2px solid #000080;
+  border: 4px solid #000080;
   color: #000080;
   font-size: 12px;
   text-align: center;
+  background-color: #c0c0c0;
 }
 
 #thumbnail {
   max-width: 100%;
-  border: 2px solid #000080;
 }
 
 /* === Text Placeholder === */

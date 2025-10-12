@@ -50,12 +50,9 @@
 	    </div>
 	    
 
-	    <!-- Placeholder for Download Button -->
-	    <div id="download-placeholder">
-	      <button id="downloadButt" onclick="download(blobLink)" style="display: none;">
+	    <button id="downloadButt" onclick="download(blobLink)" style="display: none;">
 		Baixar
-	      </button>
-	    </div>
+	    </button>
 	  </div>
 
 	</div>
@@ -70,6 +67,7 @@
 		const thumbnail = document.getElementById("thumbnail");
 		const musicasWarning = document.getElementById("musicasWarning");
 		const downloadButt = document.getElementById("downloadButt");
+		const loading = document.getElementById("loadinggif");
 		let blobLink = "";
 		let resolutions = ""; // defiened in getFormat();
 
@@ -97,6 +95,9 @@
 			const index = returnIndex(urlValue);
 			const isPlaylistUrl = isPlaylist(urlValue);
 
+			thumbnail.src = "loading.gif";
+			downloadButt.style.display = "none";
+
 			const res = await fetch(`${window.location.href}video`, {
 				method:"post",
 				headers: {
@@ -121,8 +122,6 @@
 			const thumbnailFetch = await fetch(`${window.location.href}thumbnail`, {
 				method: "GET",
 			});
-		
-			thumbnail.style.display = "flex";
 
 			if(pathValue == "./public/downloads"){
 				const thumbnailsrc = await thumbnailFetch.blob();
@@ -130,9 +129,9 @@
 				downloadButt.style.display = "flex";
 				const file = URL.createObjectURL(blob);
 				blobLink = file;
-
 			} else {
-				musicasWarning.style = "display: flex;";
+				thumbnail.src = "";
+				videoWarning.style.display = "flex";
 			}
 		}
 
@@ -162,8 +161,8 @@
 
 			resolutions.style="display:flex";
 		}
+		
 		getFormat();
-
 	</script>
 </body>
 </html>

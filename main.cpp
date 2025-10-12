@@ -227,6 +227,8 @@ void threadFunc(int socket){
 		handleGET(socket, "./public/downloads/video.webp", 200, "image/webp");
 	} else if(strstr(request.c_str(), "GET /NO_VIDEO_SUBMITED.png")) {
 		handleGET(socket, "./public/NO_VIDEO_SUBMITED.png", 200, "image/png");
+	} else if(strstr(request.c_str(), "GET /loading.gif")){
+		handleGET(socket, "./public/loading.gif", 200, "image/gif");
 	} else {
 		handleGET(socket, "./public/404.html", 404, "text/html");
 	}
