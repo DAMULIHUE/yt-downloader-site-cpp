@@ -10,6 +10,7 @@
 #include "json.hpp"
 #include <cstdlib>
 #include <fstream>
+#include <chrono>
 
 #define CHUNK 512
 
@@ -150,7 +151,7 @@ class ytDlpCommand {
 		}
 };
 
-void handlePOST(int &socket, std::string request){
+int handlePOST(int &socket, std::string request){
 	
 	int pos = request.find("\r\n\r\n");
 
@@ -206,6 +207,8 @@ void handlePOST(int &socket, std::string request){
 	hugeString.append(bodyString);
 
 	send(socket, hugeString.c_str(), hugeString.size(), 0);
+
+	return 0;
 }	
 
 // core client handling
@@ -220,7 +223,7 @@ void threadFunc(int socket){
 	} else if(strstr(request.c_str(), "GET /style.css")){ 
 		handleGET(socket, "./public/style.css", 200, "text/css");
 	} else if(strstr(request.c_str(), "GET /fonts/RetroGaming.ttf")){
-	       handleGET(socket, "./public/fonts/RetroGaming.ttf", 200, "application/octet-stream");	
+	        handleGET(socket, "./public/fonts/RetroGaming.ttf", 200, "application/octet-stream");	
 	} else if(strstr(request.c_str(), "POST /video")) {
 		handlePOST(socket, request);
 	} else if(strstr(request.c_str(), "GET /thumbnail")){
@@ -236,6 +239,8 @@ void threadFunc(int socket){
 	}
 
 	close(socket);
+
+	system("rm -r /home/lihue/yt-downloader-site-cpp/public/downloads/*");
 }
 
 int main(){
@@ -262,7 +267,7 @@ int main(){
 		errorMessage("on bind: ");
 
 	// listen on port
-	if(listen(server_fd, 5) < 0)
+	if(listen(server_fd, 3) < 0)
 		errorMessage("on listening: ");
 
 	while(true){

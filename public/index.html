@@ -34,11 +34,11 @@
 	    </select>
 
 	    <select id="path">
-	      <option value="./public/downloads">Baixar no site</option>
-	      <option value="$HOME/musicas">$HOME/musicas</option>
+	      <option value="/home/lihue/yt-downloader-site-cpp/public/downloads">Baixar no site</option>
+	      <option value="/home/admin/musicas">$HOME/musicas</option>
 	    </select>
 
-	    <button onclick="post()">Enviar</button>
+	    <button id="postButt" onclick="post()">Enviar</button>
 	  </div>
 
 	  <!-- Video Panel (Right Side) -->
@@ -48,7 +48,6 @@
 	      <img src="NO_VIDEO_SUBMITED.png" id="thumbnail" alt="Thumbnail Preview" />
 	      <p id="videoWarning" style="display: none;">O vídeo ou playlist foi baixado com sucesso!</p>
 	    </div>
-	    
 
 	    <button id="downloadButt" onclick="download(blobLink)" style="display: none;">
 		Baixar
@@ -66,6 +65,7 @@
 		const path = document.getElementById("path");
 		const thumbnail = document.getElementById("thumbnail");
 		const musicasWarning = document.getElementById("musicasWarning");
+		const postButt = document.getElementById("postButt");
 		const downloadButt = document.getElementById("downloadButt");
 		const loading = document.getElementById("loadinggif");
 		let blobLink = "";
@@ -97,6 +97,8 @@
 
 			thumbnail.src = "loading.gif";
 			downloadButt.style.display = "none";
+			postButt.style.display = "none";
+
 
 			const res = await fetch(`${window.location.href}video`, {
 				method:"post",
@@ -114,8 +116,9 @@
 			});
 
 			const blob = await res.blob();
+			postButt.style.display = "flex";
 
-			if(pathValue == "./public/downloads"){
+			if(pathValue == "/home/lihue/yt-downloader-site-cpp/public/downloads"){
 				if(isPlaylistUrl == "false"){
 					const thumbnailFetch = await fetch(`${window.location.href}thumbnail`, {
 						method: "GET",
@@ -126,7 +129,7 @@
 				} else {
 					thumbnail.src = "playlistThumb.png";
 				}
-								downloadButt.style.display = "flex";
+				downloadButt.style.display = "flex";
 				const file = URL.createObjectURL(blob);
 				blobLink = file;
 			} else {
@@ -135,13 +138,28 @@
 		}
 
 		function download(url){
-		          const a = document.createElement('a');
-	              	  a.href = url;				  
-			  //a.download = url.split('/').pop();
-			  a.download = "idkwhatToPutHere";
-			  document.body.appendChild(a);
-			  a.click();
-			  document.body.removeChild(a);
+		        const a = document.createElement('a');
+	              	a.href = url;				  
+			//a.download = url.split('/').pop();
+			a.download = "idkwhatToPutHere";
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			/*
+			const deleteFile = await fetch(`${window.location.href}video`, {
+				method: "post",
+				headers: {
+					"Content-Type": "text/plain"
+				}
+				body: {
+					"D"	
+				}
+			});
+
+
+			const asw = deleteFile;
+			console.log(asw);
+			*/
 		}
 
 		format.addEventListener("click", getFormat, false);
