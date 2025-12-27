@@ -35,7 +35,6 @@
 
 	    <select id="path">
 	      <option value="./public/downloads">Baixar no site</option>
-	      <option value="$HOME/musicas">$HOME/musicas</option>
 	    </select>
 
 	    <button onclick="post()">Enviar</button>
@@ -129,8 +128,6 @@
 								downloadButt.style.display = "flex";
 				const file = URL.createObjectURL(blob);
 				blobLink = file;
-			} else {
-				thumbnail.src = "playlistThumb.png";
 			}
 		}
 
