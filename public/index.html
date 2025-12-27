@@ -115,7 +115,7 @@
 
 			const blob = await res.blob();
 
-			if(pathValue == "./public/downloads"){
+			if(pathValue == "/home/admin/yt-download-site-cpp/public/downloads"){
 				if(isPlaylistUrl == "false"){
 					const thumbnailFetch = await fetch(`${window.location.href}thumbnail`, {
 						method: "GET",
